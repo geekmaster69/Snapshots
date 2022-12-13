@@ -14,6 +14,7 @@ import android.view.ViewGroup
 import android.widget.Toast
 import com.example.snapshots.databinding.FragmentAddBinding
 import com.google.android.material.snackbar.Snackbar
+import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.database.DatabaseReference
 import com.google.firebase.database.FirebaseDatabase
 import com.google.firebase.storage.FirebaseStorage
@@ -61,8 +62,8 @@ class AddFragment : Fragment() {
     private fun postSnapshot() {
 
         mBinding.progressBar.visibility = View.VISIBLE
-        mStorageReferences.child(PATH_SNAPSHOT).child("my_photo")
-        val reference = mStorageReferences.child(PATH_SNAPSHOT).child("my_photo")
+        val key = mDatabaseReference.push().key!!
+        val reference = mStorageReferences.child(PATH_SNAPSHOT).child(FirebaseAuth.getInstance().currentUser!!.uid).child(key)
         if (mPhotoSelectedUri != null) {
             reference.putFile(mPhotoSelectedUri!!)
                 .addOnProgressListener {
@@ -74,15 +75,24 @@ class AddFragment : Fragment() {
                     mBinding.progressBar.visibility = View.INVISIBLE
                 }
                 .addOnSuccessListener {
-                    Toast.makeText(mContext,"Instantanea publicada", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(activity,"Instantanea publicada", Toast.LENGTH_SHORT).show()
+
+                    it.storage.downloadUrl.addOnSuccessListener {
+                        saveSnapshot(key, it.toString(), mBinding.etTitle.text.toString().trim())
+
+                        mBinding.tilTitle.visibility = View.GONE
+                        mBinding.tvMessage.text = getString(R.string.post_message_title)
+                    }
                 }
                 .addOnFailureListener{
-                    Toast.makeText(mContext,"Ocurrio un error, intentelo mas tarde", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(activity,"Ocurrio un error, intentelo mas tarde", Toast.LENGTH_SHORT).show()
                 }
         }
     }
 
-    private fun saveSnapshot(){
+    private fun saveSnapshot(key: String, url: String, title: String){
+        val snapshot = Snapshot(title = title, photoUrl = url )
+        mDatabaseReference.child(key).setValue(snapshot)
 
     }
 
@@ -97,5 +107,4 @@ class AddFragment : Fragment() {
             }
         }
     }
-
 }

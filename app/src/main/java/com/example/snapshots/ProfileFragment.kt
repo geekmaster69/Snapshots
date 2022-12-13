@@ -5,9 +5,17 @@ import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.Toast
+import com.example.snapshots.databinding.FragmentAddBinding
+import com.example.snapshots.databinding.FragmentProfileBinding
+import com.firebase.ui.auth.AuthUI
+import com.google.android.gms.auth.api.Auth
+import com.google.firebase.auth.FirebaseAuth
 
 
 class ProfileFragment : Fragment() {
+
+    private lateinit var mBinding: FragmentProfileBinding
 
 
 
@@ -15,8 +23,27 @@ class ProfileFragment : Fragment() {
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View? {
-        // Inflate the layout for this fragment
-        return inflater.inflate(R.layout.fragment_profile, container, false)
+        mBinding = FragmentProfileBinding.inflate(inflater, container, false)
+        return mBinding.root
+    }
+
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
+
+        mBinding.tvName.text = FirebaseAuth.getInstance().currentUser?.displayName
+        mBinding.tvEmail.text = FirebaseAuth.getInstance().currentUser?.email
+
+        mBinding.btnLogoute.setOnClickListener { singOut() }
+    }
+
+    private fun singOut() {
+        context?.let {
+            AuthUI.getInstance().signOut(it)
+                .addOnCompleteListener {
+                    Toast.makeText(activity, "Hasta la proxima", Toast.LENGTH_SHORT).show()
+                }
+        }
+
     }
 
 }
