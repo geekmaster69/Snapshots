@@ -11,7 +11,10 @@ import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.view.inputmethod.InputMethodManager
 import android.widget.Toast
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.fragment.app.FragmentManager
 import com.example.snapshots.databinding.FragmentAddBinding
 import com.google.android.material.snackbar.Snackbar
 import com.google.firebase.auth.FirebaseAuth
@@ -24,12 +27,19 @@ class AddFragment : Fragment() {
     private lateinit var mBinding: FragmentAddBinding
     private lateinit var mStorageReferences: StorageReference
     private lateinit var mDatabaseReference: DatabaseReference
-    private var RC_GALLERY = 18
     private var mPhotoSelectedUri: Uri? = null
     private val  PATH_SNAPSHOT = "snapshots"
     private lateinit var mContext: Context
 
+    private val galeryResult = registerForActivityResult(ActivityResultContracts.StartActivityForResult()){
+        if (it.resultCode == Activity.RESULT_OK){
+                mPhotoSelectedUri = it.data?.data
+                mBinding.imgPhoto.setImageURI(mPhotoSelectedUri)
+                mBinding.tilTitle.visibility = View.VISIBLE
+                mBinding.tvMessage.text = getString(R.string.post_message_valid_title)
 
+        }
+    }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?
     ): View? {
@@ -55,7 +65,7 @@ class AddFragment : Fragment() {
 
     private fun openGallery() {
         val intent = Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI)
-        startActivityForResult(intent, RC_GALLERY)
+        galeryResult.launch(intent)
 
     }
 
@@ -82,6 +92,10 @@ class AddFragment : Fragment() {
 
                         mBinding.tilTitle.visibility = View.GONE
                         mBinding.tvMessage.text = getString(R.string.post_message_title)
+                        mBinding.imgPhoto.setImageURI(null)
+                        hideKeyboard()
+
+
                     }
                 }
                 .addOnFailureListener{
@@ -95,16 +109,8 @@ class AddFragment : Fragment() {
         mDatabaseReference.child(key).setValue(snapshot)
 
     }
-
-    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
-        super.onActivityResult(requestCode, resultCode, data)
-        if (resultCode == Activity.RESULT_OK){
-            if (requestCode == RC_GALLERY){
-                mPhotoSelectedUri = data?.data
-                mBinding.imgPhoto.setImageURI(mPhotoSelectedUri)
-                mBinding.tilTitle.visibility = View.VISIBLE
-                mBinding.tvMessage.text = getString(R.string.post_message_valid_title)
-            }
-        }
+    private fun hideKeyboard(){
+        val imm = activity?.getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
+        imm.hideSoftInputFromWindow(requireView().windowToken, 0)
     }
 }

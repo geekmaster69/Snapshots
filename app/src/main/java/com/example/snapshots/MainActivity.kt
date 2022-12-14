@@ -4,6 +4,7 @@ import android.content.Intent
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.widget.Toast
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentManager
 import androidx.recyclerview.widget.GridLayoutManager
@@ -25,6 +26,17 @@ class MainActivity : AppCompatActivity() {
     private lateinit var mAuthListener: FirebaseAuth.AuthStateListener
     private var mFirebaseAuth: FirebaseAuth? = null
 
+    private val authResult = registerForActivityResult(ActivityResultContracts.StartActivityForResult()){
+        if (it.resultCode == RESULT_OK){
+            Toast.makeText(this, "Bienvenido!", Toast.LENGTH_SHORT).show()
+        }
+        else{
+            if(IdpResponse.fromResultIntent(it.data) == null){
+                finish()
+            }
+        }
+    }
+
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -42,14 +54,16 @@ class MainActivity : AppCompatActivity() {
         mAuthListener = FirebaseAuth.AuthStateListener {
             val user = it.currentUser
             if (user == null){
-                startActivityForResult(AuthUI.getInstance().createSignInIntentBuilder()
-                    .setAvailableProviders(
-                        Arrays.asList(
-                            AuthUI.IdpConfig.EmailBuilder().build(),
-                            AuthUI.IdpConfig.GoogleBuilder().build(),
+                authResult.launch(
+                    AuthUI.getInstance().createSignInIntentBuilder()
+                        .setAvailableProviders(
+                            Arrays.asList(
+                                AuthUI.IdpConfig.EmailBuilder().build(),
+                                AuthUI.IdpConfig.GoogleBuilder().build(),
+                            )
                         )
-                    )
-                    .build(), RC_SIGN_IN)
+                        .build()
+                )
             }
         }
     }
@@ -99,6 +113,13 @@ class MainActivity : AppCompatActivity() {
                 else -> false
             }
         }
+
+        mBinding.bottomNav.setOnItemReselectedListener {
+            when(it.itemId){
+
+                R.id.item_home -> (homeFragment as HomeAux).goToTop()
+            }
+        }
     }
 
     override fun onResume() {
@@ -111,17 +132,5 @@ class MainActivity : AppCompatActivity() {
         mFirebaseAuth?.removeAuthStateListener(mAuthListener)
     }
 
-    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
-        super.onActivityResult(requestCode, resultCode, data)
-        if (requestCode == RC_SIGN_IN){
-            if (resultCode == RESULT_OK){
-                Toast.makeText(this, "Bienvenido!", Toast.LENGTH_SHORT).show()
-            }
-            else{
-                if(IdpResponse.fromResultIntent(data) == null){
-                    finish()
-                }
-            }
-        }
-    }
+
 }
